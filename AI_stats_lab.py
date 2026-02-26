@@ -52,6 +52,40 @@ def diabetes_linear_pipeline():
         test_r2,
         top_3_feature_indices (list length 3)
     """
+    diabeties = load_diabetes()
+
+    X = diabeties.data
+    Y = diabeties.target
+
+    X_train, x_test,  Y_train , y_test = train_test_split(
+        X,Y,
+        test_size = 0.2,
+        random_state = 42
+    )
+
+    scaler = StandardScaler()
+
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(x_test)
+
+
+    model = LinearRegression()
+    model.fit(X_train_scaled, Y_train)
+
+    y_train_pred = model.predict(X_train_scaled)
+    y_test_pred = model.predict(X_test_scaled)
+
+    train_mse = mean_squared_error( Y_train, y_train_pred)
+    test_mse = mean_squared_error(y_test,y_test_pred)
+    
+    train_r2 = r2_score(Y_train,y_train_pred)
+    test_r2 = r2_score(y_test,y_test_pred)
+    
+    top3 = np.argsort(np.abs(model.coef_))[-3:].tolist()
+    
+    return train_mse, test_mse, train_r2, test_r2, top3
+
+    
 
     raise NotImplementedError
 
