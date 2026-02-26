@@ -7,12 +7,13 @@ Use random_state=42 everywhere required.
 """
 
 import numpy as np
+import sklearn 
 
 from sklearn.datasets import load_diabetes, load_breast_cancer
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.pipeline import Pipeline
 from sklearn.metrics import (
     mean_squared_error,
     r2_score,
@@ -82,13 +83,12 @@ def diabetes_linear_pipeline():
     train_r2 = r2_score(Y_train,y_train_pred)
     test_r2 = r2_score(y_test,y_test_pred)
     
-    top3 = np.argsort(np.abs(model.coef_))[-3:].tolist()
+    top3 = np.argsort(np.abs(model.coef_))[::-1][:3].tolist()
     
     return train_mse, test_mse, train_r2, test_r2, top3
 
-    
 
-    raise NotImplementedError
+
 
 
 # =========================================================
@@ -113,6 +113,7 @@ def diabetes_cross_validation():
         std_r2
     """
 
+    
     diabetes = load_diabetes()
     X = diabetes.data
     y = diabetes.target
@@ -144,8 +145,6 @@ def diabetes_cross_validation():
 
 
     return mean_r2, std_r2
-    
-    raise NotImplementedError
 
 
 # =========================================================
@@ -177,8 +176,47 @@ def cancer_logistic_pipeline():
         recall,
         f1
     """
+    # STEP 1: Load dataset
+    cancer = load_breast_cancer()
+    X = cancer.data
+    y = cancer.target
 
-    raise NotImplementedError
+    # STEP 2: Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y,
+        test_size=0.2,
+        random_state=42
+    )
+
+    # STEP 3: Standardize features
+    scaler = StandardScaler()
+
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    # STEP 4: Train Logistic Regression
+    model = LogisticRegression(max_iter=5000)
+
+    model.fit(X_train_scaled, y_train)
+
+    # Predictions
+    y_train_pred = model.predict(X_train_scaled)
+    y_test_pred = model.predict(X_test_scaled)
+
+    # STEP 5: Compute metrics
+    train_accuracy = accuracy_score(y_train, y_train_pred)
+    test_accuracy = accuracy_score(y_test, y_test_pred)
+
+    precision = precision_score(y_test, y_test_pred)
+    recall = recall_score(y_test, y_test_pred)
+    f1 = f1_score(y_test, y_test_pred)
+
+    cm = confusion_matrix(y_test, y_test_pred)
+
+    print("Confusion Matrix:")
+    print(cm)
+
+    return train_accuracy, test_accuracy, precision, recall, f1
 
 
 # =========================================================
@@ -209,7 +247,36 @@ def cancer_logistic_regularization():
         results_dictionary
     """
 
-    raise NotImplementedError
+    cancer = load_breast_cancer()
+    X = cancer.data
+    y = cancer.target
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y,
+        test_size=0.2,
+        random_state=42
+    )
+
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    C_values = [0.01, 0.1, 1, 10, 100]
+    results = {}
+
+    for C in C_values:
+        model = LogisticRegression(max_iter=5000, C=C)
+        model.fit(X_train_scaled, y_train)
+
+        y_train_pred = model.predict(X_train_scaled)
+        y_test_pred = model.predict(X_test_scaled)
+
+        train_acc = accuracy_score(y_train, y_train_pred)
+        test_acc = accuracy_score(y_test, y_test_pred)
+
+        results[C] = (train_acc, test_acc)
+
+    return results
 
 
 # =========================================================
@@ -237,4 +304,24 @@ def cancer_cross_validation():
         std_accuracy
     """
 
-    raise NotImplementedError
+    cancer = load_breast_cancer()
+    X = cancer.data
+    y = cancer.target
+
+    pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('model', LogisticRegression(C=1, max_iter=5000))
+    ])
+
+    cv_scores = cross_val_score(
+        pipeline,
+        X,
+        y,
+        cv=5,
+        scoring='accuracy'
+    )
+
+    mean_accuracy = np.mean(cv_scores)
+    std_accuracy = np.std(cv_scores)
+
+    return mean_accuracy, std_accuracy
