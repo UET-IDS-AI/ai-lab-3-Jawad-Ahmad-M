@@ -11,6 +11,7 @@ import numpy as np
 from sklearn.datasets import load_diabetes, load_breast_cancer
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import (
     mean_squared_error,
@@ -112,6 +113,38 @@ def diabetes_cross_validation():
         std_r2
     """
 
+    diabetes = load_diabetes()
+    X = diabetes.data
+    y = diabetes.target
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y,
+        test_size=0.2,
+        random_state=42
+    )
+
+
+    pipeline = Pipeline([
+        ('scaler', StandardScaler()),   # Step 1: Scale features
+        ('model', LinearRegression())   # Step 2: Train model
+    ])
+
+
+    cv_scores = cross_val_score(
+        pipeline,       # model pipeline
+        X_train,        # training data only
+        y_train,
+        cv=5,           # 5-fold
+        scoring='r2'    # evaluate using R²
+    )
+
+
+    mean_r2 = np.mean(cv_scores)
+    std_r2 = np.std(cv_scores)
+
+
+    return mean_r2, std_r2
+    
     raise NotImplementedError
 
 
